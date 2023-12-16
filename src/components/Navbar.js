@@ -9,10 +9,20 @@ const Navbar = () => {
     navigate('/login');
   };
 
+  const navigateToHome = () => {
+    navigate('/');
+  };
+
   return (
     <AppBar position="static" color="default" elevation={1}>
       <Toolbar>
-        <Typography variant="h6" color="inherit" noWrap sx={{ flexGrow: 1 }}>
+      <Typography 
+          variant="h6" 
+          color="inherit" 
+          noWrap 
+          sx={{ flexGrow: 1, cursor: 'pointer' }}
+          onClick={navigateToHome}
+        >
           My Online Library
         </Typography>
         <Box>

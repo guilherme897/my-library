@@ -1,21 +1,26 @@
-// src/components/Login.js
+// src/components/Register.js
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TextField, Button, Container, Box, Typography, Link } from '@mui/material';
 
-const Login = () => {
+const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = () => {
-    // Login logic
-    navigate('/dashboard');
+  const handleRegister = (event) => {
+    event.preventDefault();
+    // Add registration logic here
+    console.log('Register with:', email, password, confirmPassword);
+    
+    // After successful registration, you might want to navigate somewhere
+    // navigate('/dashboard');
   };
 
-  const navigateToRegister = () => {
-    navigate('/register'); // Adjust the route as necessary
+  const navigateToLogin = () => {
+    navigate('/login');
   };
 
   return (
@@ -29,9 +34,9 @@ const Login = () => {
         }}
       >
         <Typography component="h1" variant="h5">
-          Sign in
+          Registar
         </Typography>
-        <Box component="form" noValidate sx={{ mt: 1 }}>
+        <Box component="form" noValidate sx={{ mt: 1 }} onSubmit={handleRegister}>
           <TextField
             margin="normal"
             required
@@ -48,23 +53,32 @@ const Login = () => {
             fullWidth
             label="Password"
             type="password"
-            autoComplete="current-password"
+            autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+          />
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            label="Confirm Password"
+            type="password"
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
           />
           <Button
             type="submit"
             fullWidth
             variant="contained"
             sx={{ mt: 3, mb: 2 }}
-            onClick={handleLogin}
           >
-            Sign In
+            Registar
           </Button>
           <Typography variant="body2" align="center">
-            Don't have an account?{' '}
-            <Link component="button" variant="body2" onClick={navigateToRegister}>
-              Register
+            Já tens uma conta?{' '}
+            <Link component="button" variant="body2" onClick={navigateToLogin}>
+              Entrar
             </Link>
           </Typography>
         </Box>
@@ -73,4 +87,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Register;
