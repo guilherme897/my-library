@@ -2,89 +2,83 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TextField, Button, Container, Box, Typography, Link } from '@mui/material';
+import { TextField, Button, Container, Box, Typography } from '@mui/material';
 
 const Register = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const navigate = useNavigate();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const navigate = useNavigate();
 
-  const handleRegister = (event) => {
-    event.preventDefault();
-    // Add registration logic here
-    console.log('Register with:', email, password, confirmPassword);
-    
-    // After successful registration, you might want to navigate somewhere
-    // navigate('/dashboard');
-  };
+    const handleRegister = async (event) => {
+        event.preventDefault();
 
-  const navigateToLogin = () => {
-    navigate('/login');
-  };
+        try {
+            const response = await fetch('http://localhost:5000/api/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }),
+            });
 
-  return (
-    <Container component="main" maxWidth="xs">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <Typography component="h1" variant="h5">
-          Registar
-        </Typography>
-        <Box component="form" noValidate sx={{ mt: 1 }} onSubmit={handleRegister}>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            label="Email Address"
-            autoComplete="email"
-            autoFocus
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            label="Password"
-            type="password"
-            autoComplete="new-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            label="Confirm Password"
-            type="password"
-            autoComplete="new-password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-          />
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3, mb: 2 }}
-          >
-            Registar
-          </Button>
-          <Typography variant="body2" align="center">
-            Já tens uma conta?{' '}
-            <Link component="button" variant="body2" onClick={navigateToLogin}>
-              Entrar
-            </Link>
-          </Typography>
-        </Box>
-      </Box>
-    </Container>
-  );
+            if (!response.ok) {
+                throw new Error('Registration failed');
+            }
+
+            // Optionally, handle the response data
+            navigate('/login'); // Redirect to login after successful registration
+        } catch (error) {
+            console.error('Registration error:', error);
+            // Handle registration error (show message to user, etc.)
+        }
+    };
+
+    return (
+        <Container component="main" maxWidth="xs">
+            <Box
+                sx={{
+                    marginTop: 8,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                }}
+            >
+                <Typography component="h1" variant="h5">
+                    Sign Up
+                </Typography>
+                <Box component="form" onSubmit={handleRegister} sx={{ mt: 1 }}>
+                    <TextField
+                        margin="normal"
+                        required
+                        fullWidth
+                        label="Email Address"
+                        autoComplete="email"
+                        autoFocus
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                    />
+                    <TextField
+                        margin="normal"
+                        required
+                        fullWidth
+                        label="Password"
+                        type="password"
+                        autoComplete="current-password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <Button
+                        type="submit"
+                        fullWidth
+                        variant="contained"
+                        sx={{ mt: 3, mb: 2 }}
+                    >
+                        Sign Up
+                    </Button>
+                </Box>
+            </Box>
+        </Container>
+    );
 };
 
 export default Register;

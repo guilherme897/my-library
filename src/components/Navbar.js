@@ -13,6 +13,10 @@ const Navbar = () => {
     navigate('/');
   };
 
+  const navigateToBooks = () => {
+    navigate('/books');
+  };
+
   return (
     <AppBar position="static" color="default" elevation={1}>
       <Toolbar>
@@ -26,8 +30,8 @@ const Navbar = () => {
           My Online Library
         </Typography>
         <Box>
-          <Button color="primary" onClick={navigateToLogin}>
-            Search
+          <Button color="primary" onClick={navigateToBooks}>
+            Livros
           </Button>
           <Button color="primary" onClick={navigateToLogin}>
             Quem Somos

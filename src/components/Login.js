@@ -1,18 +1,34 @@
-// src/components/Login.js
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TextField, Button, Container, Box, Typography, Link } from '@mui/material';
-
+import { Container, Box, TextField, Button, Typography, Link } from '@mui/material';
+import axios from 'axios'; 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = () => {
-    // Login logic
-    navigate('/dashboard');
-  };
+  const handleLogin = async (event) => {
+    event.preventDefault();
+
+    try {
+        const response = await axios.post('/api/login', {
+            email,
+            password
+        });
+
+        // Assuming the backend sends some sort of success message
+        console.log(response.data.message);
+        
+        // Redirect based on user role (admin or not)
+        // This requires that the backend sends isAdmin status. Adjust as needed.
+        const redirectTo = response.data.isAdmin ? '/admin-dashboard' : '/dashboard';
+        navigate(redirectTo);
+    } catch (error) {
+        console.error('Login error:', error.response ? error.response.data : error);
+        // Handle login error (show message to user, etc.)
+    }
+};
+
 
   const navigateToRegister = () => {
     navigate('/register'); // Adjust the route as necessary
@@ -29,9 +45,9 @@ const Login = () => {
         }}
       >
         <Typography component="h1" variant="h5">
-          Sign in
+          Sign In
         </Typography>
-        <Box component="form" noValidate sx={{ mt: 1 }}>
+        <Box component="form" onSubmit={handleLogin} sx={{ mt: 1 }}>
           <TextField
             margin="normal"
             required
@@ -57,7 +73,6 @@ const Login = () => {
             fullWidth
             variant="contained"
             sx={{ mt: 3, mb: 2 }}
-            onClick={handleLogin}
           >
             Sign In
           </Button>
