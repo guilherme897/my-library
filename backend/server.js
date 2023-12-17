@@ -76,6 +76,78 @@ const verifyToken = (req, res, next) => {
     }
 };
 
+app.get('/api/books', (req, res) => {
+  const query = `
+  SELECT Books.*, Authors.Name as AuthorName
+  FROM Books
+  JOIN Authors ON Books.AuthorID = Authors.AuthorID;
+`;
+
+pool.query(query, (error, results) => {
+  if (error) {
+    return res.status(500).json({ error });
+  }
+  res.json(results);
+});
+});
+
+app.post('/api/books', verifyToken, (req, res) => {
+  const { title, author } = req.body;
+  // Add SQL query to insert a new book
+  pool.query('INSERT INTO Books (title, author) VALUES (?, ?)', [title, author], (error, results) => {
+      if (error) {
+          return res.status(500).json({ message: 'Error adding book', error: error.message });
+      }
+      res.status(201).json({ message: 'Book added successfully', bookId: results.insertId });
+  });
+});
+
+app.delete('/api/books/:id', verifyToken, (req, res) => {
+  const bookId = req.params.id;
+  // Add SQL query to delete a book
+  pool.query('DELETE FROM Books WHERE id = ?', [bookId], (error, results) => {
+      if (error) {
+          return res.status(500).json({ message: 'Error deleting book', error: error.message });
+      }
+      res.status(200).json({ message: 'Book deleted successfully' });
+  });
+});
+
+
+
+app.get('/api/users/search', verifyToken,async (req, res) => {
+  const { email } = req.query;
+
+  pool.query('SELECT UserID, Email, IsAdmin FROM Users WHERE Email = ?', [email], (error, results) => {
+      if (error) {
+          return res.status(500).json({ message: 'Error searching for user', error: error.message });
+      }
+      
+      if (results.length === 0) {
+          return res.status(404).json({ message: 'User not found' });
+      }
+      console.log(results[0]);
+      res.json(results[0]);
+  });
+});
+
+
+app.put('/api/users/:id/role',verifyToken, (req, res) => {
+  
+  const userId = req.params.id;
+  const { newRole } = req.body;
+  const isAdmin = newRole ? '1' : '0';
+console.log(isAdmin);
+console.log(userId);
+  // Add SQL query to update user's role
+  pool.query('UPDATE Users SET IsAdmin = ? WHERE UserID = ?', [isAdmin, userId], (error, results) => {
+      if (error) {
+          return res.status(500).json({ message: 'Error updating user role', error: error.message });
+      }
+      res.status(200).json({ message: 'User role updated successfully' });
+  });
+});
+
 app.get('/api/admin-dashboard', verifyToken, (req, res) => {
     if (!req.user.isAdmin) {
         return res.status(403).json({ message: 'Access denied' });

@@ -1,17 +1,15 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios'; 
-
 const Navbar = () => {
   const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
   useEffect(() => {
-    console.log("Cookies: ", document.cookie);
+    const IsLog = localStorage.getItem('IsLog');
+    setIsLoggedIn(IsLog);
   }, []);
-  const isUserLoggedIn = () => {
-    console.log(document.cookie);
-    return !!document.cookie.split('; ').find(row => row.startsWith('session_token='));
-  };
 
   const navigateToLogin = () => {
     navigate('/login');
@@ -28,6 +26,8 @@ const Navbar = () => {
     try {
       await axios.post('http://localhost:5000/api/logout', {}, { withCredentials: true });
       navigate('/');
+      localStorage.removeItem('IsLog'); // Assume token is stored in local storage
+      setIsLoggedIn(false);
       window.location.reload(); // To refresh the page and update the authentication state
     } catch (error) {
       console.error('Logout error:', error);
@@ -50,7 +50,7 @@ const Navbar = () => {
           <Button color="primary" onClick={navigateToBooks}>
             Livros
           </Button>
-          {isUserLoggedIn() ? (
+          {isLoggedIn ? (
             <Button color="primary" onClick={handleLogout}>
               Logout
             </Button>

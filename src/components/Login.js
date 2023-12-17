@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Box, TextField, Button, Typography, Link } from '@mui/material';
 import axios from 'axios'; 
+
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -15,11 +16,13 @@ const Login = () => {
 
         // Assuming the backend sends some sort of success message
         console.log(response.data.message);
-        
+        localStorage.setItem('IsLog', 'true');
         // Redirect based on user role (admin or not)
         // This requires that the backend sends isAdmin status. Adjust as needed.
         const redirectTo = response.data.isAdmin ? '/admin-dashboard' : '/dashboard';
         navigate(redirectTo);
+        window.location.reload(); // To refresh the page and update the authentication state
+
     } catch (error) {
         console.error('Login error:', error.response ? error.response.data : error);
         // Handle login error (show message to user, etc.)

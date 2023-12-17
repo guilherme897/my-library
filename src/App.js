@@ -5,7 +5,6 @@ import AppRoutes from './routes/AppRoutes';
 import Footer from './components/Footer';
 import Navbar from './components/Navbar';
 import { CssBaseline, Box } from '@mui/material';
-
 function App() {
   return (
     <>

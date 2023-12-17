@@ -3,7 +3,7 @@ import { Routes, Route } from 'react-router-dom';import HomePage from '../pages/
 import Login from '../components/Login';
 import Dashboard from '../pages/Dashboard';
 import Register from '../components/Register';
-import PrivateRoute from '../components/PrivateRoute';
+//import PrivateRoute from '../components/PrivateRoute';
 import BookCatalog from '../pages/BookCatalog'; 
 import AdminDashboard from '../pages/adminDashboard';
 const AppRoutes = () => {
