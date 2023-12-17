@@ -1,9 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios'; 
 
 const Navbar = () => {
   const navigate = useNavigate();
+  useEffect(() => {
+    console.log("Cookies: ", document.cookie);
+  }, []);
+  const isUserLoggedIn = () => {
+    console.log(document.cookie);
+    return !!document.cookie.split('; ').find(row => row.startsWith('session_token='));
+  };
 
   const navigateToLogin = () => {
     navigate('/login');
@@ -16,11 +24,20 @@ const Navbar = () => {
   const navigateToBooks = () => {
     navigate('/books');
   };
+  const handleLogout = async () => {
+    try {
+      await axios.post('http://localhost:5000/api/logout', {}, { withCredentials: true });
+      navigate('/');
+      window.location.reload(); // To refresh the page and update the authentication state
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   return (
     <AppBar position="static" color="default" elevation={1}>
       <Toolbar>
-      <Typography 
+        <Typography 
           variant="h6" 
           color="inherit" 
           noWrap 
@@ -33,12 +50,15 @@ const Navbar = () => {
           <Button color="primary" onClick={navigateToBooks}>
             Livros
           </Button>
-          <Button color="primary" onClick={navigateToLogin}>
-            Quem Somos
-          </Button>
-          <Button color="primary" onClick={navigateToLogin}>
-            Log In
-          </Button>
+          {isUserLoggedIn() ? (
+            <Button color="primary" onClick={handleLogout}>
+              Logout
+            </Button>
+          ) : (
+            <Button color="primary" onClick={navigateToLogin}>
+              Log In
+            </Button>
+          )}
         </Box>
       </Toolbar>
     </AppBar>

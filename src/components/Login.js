@@ -11,10 +11,7 @@ const Login = () => {
     event.preventDefault();
 
     try {
-        const response = await axios.post('/api/login', {
-            email,
-            password
-        });
+      const response = await axios.post('http://localhost:5000/api/login', { email, password });
 
         // Assuming the backend sends some sort of success message
         console.log(response.data.message);
