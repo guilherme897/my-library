@@ -53,7 +53,7 @@ app.post('/api/login', (req, res) => {
             return res.status(401).json({ message: 'Invalid email or password' });
         }
 
-        const token = jwt.sign({ userId: user.UserID, isAdmin: user.IsAdmin }, JWT_SECRET, { expiresIn: '30s' });
+        const token = jwt.sign({ userId: user.UserID, isAdmin: user.IsAdmin }, JWT_SECRET, { expiresIn: '5m' });
         res.cookie('session_token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
         res.status(200).json({ token, isAdmin: user.IsAdmin });
           });
@@ -76,12 +76,49 @@ const verifyToken = (req, res, next) => {
     }
 };
 
+app.get('/api/user/role', verifyToken, (req, res) => {
+    if (!req.user.isAdmin) {
+        return res.status(403).json({ message: 'Acesso negado' });
+    }
+    if (req.user) {
+        // Send back whether the user is an admin
+        console.log(req.user);
+        res.json({ isAdmin: req.user.isAdmin });
+    } else {
+        res.status(401).json({ message: 'Invalid token' });
+    }
+});
+
 app.get('/api/books', (req, res) => {
   const query = `
   SELECT Books.*, Authors.Name as AuthorName
   FROM Books
   JOIN Authors ON Books.AuthorID = Authors.AuthorID;
 `;
+
+app.get('/api/books/:bookId', (req, res) => {
+  const bookId = req.params.bookId;
+
+  const query = `
+      SELECT Books.*, Authors.Name AS AuthorName 
+      FROM Books 
+      JOIN Authors ON Books.AuthorID = Authors.AuthorID 
+      WHERE Books.BookID = ?`;
+
+  pool.query(query, [bookId], (error, results) => {
+      if (error) {
+          return res.status(500).json({ message: 'Error fetching book details', error: error.message });
+      }
+
+      if (results.length === 0) {
+          return res.status(404).json({ message: 'Book not found' });
+      }
+
+      const book = results[0];
+      res.json(book);
+  });
+});
+
 
 pool.query(query, (error, results) => {
   if (error) {
@@ -92,17 +129,53 @@ pool.query(query, (error, results) => {
 });
 
 app.post('/api/books', verifyToken, (req, res) => {
-  const { title, author } = req.body;
-  // Add SQL query to insert a new book
-  pool.query('INSERT INTO Books (title, author) VALUES (?, ?)', [title, author], (error, results) => {
+    if (!req.user.isAdmin) {
+        return res.status(403).json({ message: 'Acesso negado' });
+    }
+  const { title, summary, isbn, publishedDate, coverImage, authorName } = req.body;
+
+  // First, check if the author exists
+  pool.query('SELECT AuthorID FROM Authors WHERE Name = ?', [authorName], (error, results) => {
       if (error) {
-          return res.status(500).json({ message: 'Error adding book', error: error.message });
+          return res.status(500).json({ message: 'Error checking author', error: error.message });
       }
-      res.status(201).json({ message: 'Book added successfully', bookId: results.insertId });
+
+      let authorId;
+
+      if (results.length > 0) {
+          // Author exists
+          authorId = results[0].AuthorID;
+          insertBook();
+      } else {
+          // Author doesn't exist, insert new author
+          pool.query('INSERT INTO Authors (Name) VALUES (?)', [authorName], (error, results) => {
+              if (error) {
+                  return res.status(500).json({ message: 'Error adding author', error: error.message });
+              }
+
+              authorId = results.insertId;
+              insertBook();
+          });
+      }
+
+      function insertBook() {
+          // Now insert the book with the authorId
+          const query = 'INSERT INTO Books (Title, Summary, ISBN, PublishedDate, CoverImage, AuthorID) VALUES (?, ?, ?, ?, ?, ?)';
+          pool.query(query, [title, summary, isbn, publishedDate, coverImage, authorId], (error, results) => {
+              if (error) {
+                  return res.status(500).json({ message: 'Error adding book', error: error.message });
+              }
+              res.status(201).json({ message: 'Book added successfully', bookId: results.insertId });
+          });
+      }
   });
 });
 
+
 app.delete('/api/books/:id', verifyToken, (req, res) => {
+    if (!req.user.isAdmin) {
+        return res.status(403).json({ message: 'Acesso negado' });
+    }
   const bookId = req.params.id;
   // Add SQL query to delete a book
   pool.query('DELETE FROM Books WHERE id = ?', [bookId], (error, results) => {
@@ -113,9 +186,90 @@ app.delete('/api/books/:id', verifyToken, (req, res) => {
   });
 });
 
+app.get('/api/user/bookloans', verifyToken, (req, res) => {
+    
+    const userId = req.user.userId; // Assuming userId is set by the verifyToken middleware
 
+    pool.query(
+        'SELECT * FROM BookLoans WHERE UserID = ?',
+        [userId],
+        (error, results) => {
+            if (error) {
+                return res.status(500).json({ message: 'Error fetching book loans', error: error.message });
+            }
+
+            res.json(results); // Send the book loans data to the client
+            console.log(results);
+        }
+    );
+});
+
+app.get('/api/user/loans/:email', verifyToken, (req, res) => {
+    if (!req.user.isAdmin) {
+        return res.status(403).json({ message: 'Acesso negado' });
+    }
+    const userEmail = req.params.email;
+    console.log(userEmail);
+    pool.query(
+        'SELECT bl.LoanID, b.Title AS BookTitle, bl.LoanDate, bl.ReturnDate FROM BookLoans AS bl INNER JOIN Users AS u ON bl.UserID = u.UserID INNER JOIN Books AS b ON bl.BookID = b.BookID WHERE u.Email = ?',
+        [userEmail],
+        (error, results) => {
+            if (error) {
+                return res.status(500).json({ message: 'Error fetching book loans', error: error.message });
+            }
+            res.json(results);
+            console.log(results);
+        }
+    );
+});
+app.delete('/api/loans/:loanId', verifyToken, async (req, res) => {
+    if (!req.user.isAdmin) {
+        return res.status(403).json({ message: 'Acesso negado' });
+    }
+    const loanId = req.params.loanId;
+
+    try {
+        await pool.query('DELETE FROM BookLoans WHERE LoanID = ?', [loanId]);
+        res.json({ message: 'Loan deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error deleting loan', error: error.message });
+    }
+});
+
+
+app.post('/api/bookloans', verifyToken, (req, res) => {
+    // Assuming the request body contains a user ID and an array of book IDs
+    const userId = req.user.userId;
+    const bookIds = req.body.bookIds;
+
+    if (!bookIds || bookIds.length === 0) {
+        return res.status(400).json({ message: 'No books provided for loan' });
+    }
+
+    const loanDate = new Date();
+    const returnDate = new Date(loanDate);
+    returnDate.setMonth(loanDate.getMonth() + 1); // Set return date to one month later
+    console.log(userId, bookIds, loanDate, returnDate);
+    bookIds.forEach(bookId => {
+        pool.query(
+            'INSERT INTO BookLoans (BookID, UserID, LoanDate, ReturnDate) VALUES (?, ?, ?, ?)',
+            [bookId, userId, loanDate, returnDate],
+            (error) => {
+                if (error) {
+                    // Handle error properly (note: this simple loop does not handle partial failures well)
+                    console.error('Error creating book loan:', error);
+                }
+            }
+        );
+    });
+
+    res.json({ message: 'Loan created successfully' });
+});
 
 app.get('/api/users/search', verifyToken,async (req, res) => {
+    if (!req.user.isAdmin) {
+        return res.status(403).json({ message: 'Acesso negado' });
+    }
   const { email } = req.query;
 
   pool.query('SELECT UserID, Email, IsAdmin FROM Users WHERE Email = ?', [email], (error, results) => {
@@ -133,7 +287,9 @@ app.get('/api/users/search', verifyToken,async (req, res) => {
 
 
 app.put('/api/users/:id/role',verifyToken, (req, res) => {
-  
+    if (!req.user.isAdmin) {
+        return res.status(403).json({ message: 'Acesso negado' });
+    }
   const userId = req.params.id;
   const { newRole } = req.body;
   const isAdmin = newRole ? '1' : '0';
